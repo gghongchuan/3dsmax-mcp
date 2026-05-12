@@ -1443,27 +1443,25 @@ def create_material_from_textures(
         return f"No textures matched any channel pattern. File stems: {suffixes}"
 
     # -- Step 3: Determine renderer / material class --
-    renderer = ""
+    # Default is OpenPBR — neutral PBR material that works without a renderer.
+    # Shell_Material is a wrapping construct (render slot + export slot), only
+    # built when the caller explicitly asks for it via material_class.
     class_lower = material_class.lower().strip() if material_class else ""
     if not material_class:
-        # Packed ORM sets get the richer dual-pipeline material by default:
-        # Arnold render slot from UberBitmap/ORM split + export slot in a Shell.
-        renderer = "shell" if "diffuse" in matched and "orm" in matched else "openpbr"
+        renderer = "openpbr"
     elif class_lower in {"shell", "shell_material", "shell_mtl", "shell_material_arnold", "shell_arnold_orm"}:
         renderer = "shell"
-    elif material_class:
-        class_lower = material_class.lower()
-        if "openpbr" in class_lower or "open_pbr" in class_lower:
-            renderer = "openpbr"
-        elif "ai_standard" in class_lower or "arnold" in class_lower:
-            renderer = "arnold"
-        elif "physical" in class_lower:
-            renderer = "physical"
-        elif "rs_standard" in class_lower or "redshift" in class_lower:
-            renderer = "redshift"
-        else:
-            return (f"Unsupported material_class: {material_class}. "
-                    "Use OpenPBRMaterial, Shell_Material, ai_standard_surface, PhysicalMaterial, or RS_Standard_Material.")
+    elif "openpbr" in class_lower or "open_pbr" in class_lower:
+        renderer = "openpbr"
+    elif "ai_standard" in class_lower or "arnold" in class_lower:
+        renderer = "arnold"
+    elif "physical" in class_lower:
+        renderer = "physical"
+    elif "rs_standard" in class_lower or "redshift" in class_lower:
+        renderer = "redshift"
+    else:
+        return (f"Unsupported material_class: {material_class}. "
+                "Use OpenPBRMaterial, Shell_Material, ai_standard_surface, PhysicalMaterial, or RS_Standard_Material.")
 
     # -- Step 4: Derive material name --
     if not material_name:

@@ -67,8 +67,8 @@ Debugging:
 - OSL: `write_osl_shader`
 
 ### Material Pipeline Notes
-- `create_material_from_textures` defaults simple sets to OpenPBR-first material creation.
-- When a diffuse/basecolor map and packed ORM map are detected, `create_material_from_textures` uses the Shell/UberBitmap workflow: Arnold render material in `originalMaterial`, export material in `bakedMaterial`, `renderMtlIndex = 0`, `viewportMtlIndex = 1`.
+- `create_material_from_textures` defaults to OpenPBR. Pass `material_class="Shell_Material"` to opt into the Shell/UberBitmap workflow when you actually want a dual-pipeline (render + export) material — never as the default for plain texture sets.
+- Shell workflow (when explicitly requested): Arnold render material in `originalMaterial`, export material in `bakedMaterial`, `renderMtlIndex = 0`, `viewportMtlIndex = 1`. Requires diffuse + packed ORM textures.
 - Packed ORM textures are split with `MultiOutputChannelTexmapToTexmap`: R/AO, G/roughness, B/metalness.
 - Arnold base color is multiplied by AO with `ai_multiply`, not `ai_layer_rgba`.
 - Use `create_shell_material` when the texture paths are already known or when wrapping an existing glTF/export material by name.

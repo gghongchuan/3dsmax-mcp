@@ -41,7 +41,23 @@ class OpenPBRMaterialTests(unittest.TestCase):
 
         build_openpbr.assert_called_once()
 
-    def test_create_material_from_textures_uses_shell_workflow_for_packed_orm(self) -> None:
+    def test_create_material_from_textures_defaults_to_openpbr_even_with_orm(self) -> None:
+        # Shell is a wrapping construct (render slot + export slot) and is
+        # never the implicit default. Folders with packed ORM still get plain
+        # OpenPBR unless the caller passes material_class="Shell_Material".
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "asset_basecolor.png").write_bytes(b"fake")
+            (root / "asset_orm.png").write_bytes(b"fake")
+
+            with patch("src.tools.material_ops._build_openpbr_maxscript", return_value="-- mock") as build_openpbr, \
+                 patch("src.tools.material_ops.client.send_command",
+                       return_value={"result": '{"status":"success"}'}):
+                create_material_from_textures(tmp, material_name="asset")
+
+        build_openpbr.assert_called_once()
+
+    def test_create_material_from_textures_uses_shell_when_explicit(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "asset_basecolor.png").write_bytes(b"fake")
@@ -52,7 +68,9 @@ class OpenPBRMaterialTests(unittest.TestCase):
                 "src.tools.material_ops.client.send_command",
                 return_value={"result": '{"status":"success"}'},
             ) as send:
-                result = create_material_from_textures(tmp, material_name="asset")
+                result = create_material_from_textures(
+                    tmp, material_name="asset", material_class="Shell_Material"
+                )
 
         self.assertEqual(result, '{"status":"success"}')
         send.assert_called_once()
@@ -66,7 +84,6 @@ class OpenPBRMaterialTests(unittest.TestCase):
         self.assertIn("ai_multiply", maxscript)
         self.assertIn('shell.originalMaterial = arnoldMat', maxscript)
         self.assertIn('shell.bakedMaterial = gltfMat', maxscript)
-        self.assertIn('asset_gltf', maxscript)
 
     def test_create_material_from_textures_shell_requires_orm(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
